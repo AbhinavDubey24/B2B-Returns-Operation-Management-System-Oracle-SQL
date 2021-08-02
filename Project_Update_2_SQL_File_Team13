@@ -1,0 +1,217 @@
+DROP TABLE Dispute;
+DROP TABLE Return_Line;
+DROP TABLE Return_Shipment;
+DROP TABLE Return_State_Transition;
+DROP TABLE No_Pickup_Return;
+DROP TABLE Pickup_Exchange_Return;
+DROP TABLE In_Store_Returns;
+DROP TABLE Return13 cascade constraints;
+DROP TABLE Partial_RTO_Reverse_Shipment;
+DROP TABLE Partial_RTO_Order;
+DROP TABLE Order_Line;
+DROP TABLE Order13;
+DROP TABLE Listing;
+DROP TABLE Seller;
+DROP TABLE Customer13;
+
+--Customer
+CREATE TABLE Customer13 (
+Customer_ID NUMBER(15) PRIMARY KEY NOT NULL,
+Customer_FirstName VARCHAR(30),
+Customer_LastName VARCHAR(30),
+Customer_Street VARCHAR(30),
+Customer_City VARCHAR(30),
+Customer_State VARCHAR(30),
+Customer_ZIP NUMBER(5),
+Customer_Contact NUMBER(10),
+Customer_Email VARCHAR(30)
+);
+
+--Seller
+CREATE TABLE Seller (
+Seller_ID NUMBER(15) PRIMARY KEY NOT NULL,
+Seller_FirstName VARCHAR(30),
+Seller_LastName VARCHAR(30),
+Seller_City VARCHAR(30),
+Seller_State VARCHAR(30),
+Seller_ZIP VARCHAR(30),
+Seller_Contact NUMBER(10),
+Seller_Email VARCHAR(30)
+);
+
+
+--Listing
+CREATE TABLE Listing (
+Listing_ID NUMBER(15) PRIMARY KEY NOT NULL,
+Unit_Price NUMBER(15),
+Seller_ID NUMBER (15) null,
+CONSTRAINT fk_to_sellerid 
+    FOREIGN KEY (Seller_ID) 
+    REFERENCES Seller(Seller_ID),
+Category_List VARCHAR(30),
+Sub_Category  VARCHAR(30),
+Vertical VARCHAR(30),
+Current_Active  VARCHAR(30) 
+);
+
+--Order
+CREATE TABLE Order13 (
+Order_ID NUMBER(15) PRIMARY KEY NOT NULL,
+Order_Status VARCHAR(30),
+Customer_ID NUMBER (15) null,
+CONSTRAINT fk_to_customerid
+    FOREIGN KEY (Customer_ID) 
+    REFERENCES Customer13(Customer_ID),
+Order_TS DATE
+);
+
+--Order_Line
+CREATE TABLE Order_line(
+Order_Line_ID NUMBER(15) PRIMARY KEY NOT NULL,
+Order_ID NUMBER(15) null,
+Listing_ID NUMBER(15) null,
+CONSTRAINT fk_to_orderid 
+    FOREIGN KEY (Order_ID) 
+    REFERENCES Order13(Order_ID),
+CONSTRAINT fk_to_listingid 
+    FOREIGN KEY (Listing_ID) 
+    REFERENCES Listing(Listing_ID),
+Line_Qty NUMBER(15),
+Line_Amt NUMBER(15)
+);
+
+
+--Partial_RTO_Order
+CREATE TABLE Partial_RTO_Order(
+Partial_RTO_ID NUMBER(15) PRIMARY KEY NOT NULL,
+Order_ID NUMBER(15) null,
+CONSTRAINT fk_to_orderid2 
+    FOREIGN KEY (Order_ID) 
+    REFERENCES Order13(Order_ID),
+Partial_RTO_Del_Qty NUMBER(15),
+Order_Status VARCHAR(30),
+Partial_RTO_Ret_Qty NUMBER(15),
+Partial_RTO_Del_Amt NUMBER(15),
+Partial_RTO_Ret_Amt NUMBER(15)
+);
+
+--Partial_RTO_Reverse_Shipment
+CREATE TABLE Partial_RTO_Reverse_Shipment(
+Partial_RTO_Rev_Ship_ID NUMBER(15) PRIMARY KEY NOT NULL,
+Partial_RTO_ID NUMBER(15) null,
+Seller_ID NUMBER(15) null,
+CONSTRAINT fk_to_prtoid 
+    FOREIGN KEY (Partial_RTO_ID) 
+    REFERENCES Partial_RTO_Order(Partial_RTO_ID),
+CONSTRAINT fk_to_sellerid2 
+    FOREIGN KEY (Seller_ID) 
+    REFERENCES Seller(Seller_ID),
+Partial_RTO_Shipment_ID NUMBER(15),
+Partial_RTO_Shipment_Amt NUMBER(15)
+);
+
+--Return_Table
+CREATE TABLE Return13 (
+Return_ID NUMBER(15) PRIMARY KEY NOT NULL,
+Customer_ID NUMBER(15) null,
+CONSTRAINT fk_to_customerid1 
+    FOREIGN KEY (Customer_ID) 
+    REFERENCES Customer13(Customer_ID),
+Return_Status VARCHAR(30),
+Dispute_Flag VARCHAR(30),
+Approved_On DATE,
+Return_Type VARCHAR(30),
+Review_Title VARCHAR(30),
+Review_Description VARCHAR(30),
+Review_Rating NUMBER (15)
+);
+
+--In-Store_Return
+CREATE TABLE In_Store_Returns(
+Store_ID NUMBER(15) PRIMARY KEY NOT NULL,
+Return_ID NUMBER(15) null,
+CONSTRAINT fk_to_returnid 
+    FOREIGN KEY (Return_ID) 
+    REFERENCES Return13(Return_ID)
+);
+
+--Pickup_Exchange_Return
+CREATE TABLE Pickup_Exchange_Return(
+Exchange_Item_ID NUMBER(15) PRIMARY KEY NOT NULL,
+Return_ID NUMBER(15) null,
+CONSTRAINT fk_to_returnid2 
+    FOREIGN KEY (Return_ID) 
+    REFERENCES Return13(Return_ID)
+);
+
+--No_Pickup_Return
+CREATE TABLE No_Pickup_Return(
+Acknowledgement_ID NUMBER(15) PRIMARY KEY NOT NULL,
+Return_ID NUMBER(15) null,
+CONSTRAINT fk_to_returnid3 
+    FOREIGN KEY (Return_ID) 
+    REFERENCES Return13(Return_ID)
+);
+
+--Return_State_Transition
+CREATE TABLE Return_State_Transition(
+Return_State_Trans_ID NUMBER(15) PRIMARY KEY,
+Return_ID NUMBER(15) null,
+CONSTRAINT fk_to_returnid4 
+    FOREIGN KEY (Return_ID) 
+    REFERENCES Return13(Return_ID),
+New_Status VARCHAR(30),
+Old_Status_Timestamp VARCHAR(30),
+New_Status_Timestamp VARCHAR(30),
+Current_Active VARCHAR(30)
+);
+
+--Return_Shipment
+CREATE TABLE Return_Shipment (
+AWB_Number VARCHAR(30) PRIMARY KEY NOT NULL,
+Return_ID NUMBER(15) null,
+Seller_ID NUMBER(15) null,
+CONSTRAINT fk_to_returnid5 
+    FOREIGN KEY (Return_ID) 
+    REFERENCES Return13(Return_ID),
+CONSTRAINT fk_to_sellerid3 
+    FOREIGN KEY (Seller_ID) 
+    REFERENCES Seller(Seller_ID),
+Return_Shipment_Status VARCHAR(30),
+Days_Since_Pickup NUMBER(3),
+Return_Shipment_ID NUMBER(15)
+);
+
+--Return_Line
+CREATE TABLE Return_Line (
+Return_Line_ID NUMBER(15) PRIMARY KEY NOT NULL,
+Order_Line_ID NUMBER(15) null,
+Return_ID NUMBER(15) null,
+CONSTRAINT fk_to_orderlineid 
+    FOREIGN KEY (Order_Line_ID) 
+    REFERENCES Order_Line(Order_Line_ID),
+CONSTRAINT fk_to_returnid6 
+    FOREIGN KEY (Return_ID) 
+    REFERENCES Return13(Return_ID),
+Return_Line_Qty NUMBER(15),
+Return_Line_Unit_Price NUMBER(15),
+Return_Line_Amount NUMBER(15)
+);
+
+--Dispute
+CREATE TABLE Dispute (
+Dispute_ID NUMBER(15) PRIMARY KEY NOT NULL,
+Return_ID NUMBER(15) null,
+Seller_ID NUMBER(15) null,
+CONSTRAINT fk_to_returnid7 
+    FOREIGN KEY (Return_ID) 
+    REFERENCES Return13(Return_ID),
+CONSTRAINT fk_to_sellerid4 
+    FOREIGN KEY (Seller_ID) 
+    REFERENCES Seller(Seller_ID),
+Dispute_Status VARCHAR(30),
+Resolved_On VARCHAR(30)
+);
+
+
+
